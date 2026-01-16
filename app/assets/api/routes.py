@@ -8,6 +8,7 @@ from aiohttp import web
 from pydantic import ValidationError
 
 import app.assets.manager as manager
+import app.assets.scanner as scanner
 from app import user_manager
 from app.assets.api import schemas_in
 from app.assets.helpers import get_query_dict
@@ -492,3 +493,24 @@ async def delete_asset_tags(request: web.Request) -> web.Response:
         return _error_response(500, "INTERNAL", "Unexpected server error.")
 
     return web.json_response(result.model_dump(mode="json"), status=200)
+
+
+@ROUTES.post("/api/assets/scan/seed")
+async def seed_assets(request: web.Request) -> web.Response:
+    logging.info("seed_assets request received")
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+
+    try:
+        body = schemas_in.ScheduleAssetScanBody.model_validate(payload)
+    except ValidationError as ve:
+        return _validation_error_response("INVALID_BODY", ve)
+
+    try:
+        scanner.seed_assets(body.roots)
+    except Exception:
+        logging.exception("seed_assets failed for roots=%s", body.roots)
+        return _error_response(500, "INTERNAL", "Unexpected server error.")
+    return web.json_response({"synced": True, "roots": body.roots}, status=200)

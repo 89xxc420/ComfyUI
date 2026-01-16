@@ -11,6 +11,7 @@ from pydantic import (
     model_validator,
 )
 
+from app.assets.helpers import RootType
 
 class ListAssetsQuery(BaseModel):
     include_tags: list[str] = Field(default_factory=list)
@@ -287,3 +288,7 @@ class SetPreviewBody(BaseModel):
         except Exception:
             raise ValueError("preview_id must be a UUID")
         return s
+
+
+class ScheduleAssetScanBody(BaseModel):
+    roots: list[RootType] = Field(..., min_length=1)
