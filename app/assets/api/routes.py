@@ -513,4 +513,3 @@ async def seed_assets(request: web.Request) -> web.Response:
         logging.exception("seed_assets failed for roots=%s", body.roots)
         return _error_response(500, "INTERNAL", "Unexpected server error.")
     return web.json_response({"synced": True, "roots": body.roots}, status=200)
-
