@@ -202,18 +202,70 @@ def clear_cache_providers() -> None:
 # Utilities
 # ============================================================
 
+def _canonicalize(obj: Any) -> Any:
+    """
+    Convert an object to a canonical, JSON-serializable form.
+
+    This ensures deterministic ordering regardless of Python's hash randomization,
+    which is critical for cross-pod cache key consistency. Frozensets in particular
+    have non-deterministic iteration order between Python sessions.
+    """
+    import json
+
+    if isinstance(obj, frozenset):
+        # Sort frozenset items for deterministic ordering
+        return ("__frozenset__", sorted(
+            [_canonicalize(item) for item in obj],
+            key=lambda x: json.dumps(x, sort_keys=True)
+        ))
+    elif isinstance(obj, set):
+        return ("__set__", sorted(
+            [_canonicalize(item) for item in obj],
+            key=lambda x: json.dumps(x, sort_keys=True)
+        ))
+    elif isinstance(obj, tuple):
+        return ("__tuple__", [_canonicalize(item) for item in obj])
+    elif isinstance(obj, list):
+        return [_canonicalize(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {str(k): _canonicalize(v) for k, v in sorted(obj.items())}
+    elif isinstance(obj, (int, float, str, bool, type(None))):
+        return obj
+    elif isinstance(obj, bytes):
+        return ("__bytes__", obj.hex())
+    elif hasattr(obj, 'value'):
+        # Handle Unhashable class from ComfyUI
+        return ("__unhashable__", _canonicalize(getattr(obj, 'value', None)))
+    else:
+        # For other types, use repr as fallback
+        return ("__repr__", repr(obj))
+
+
 def serialize_cache_key(cache_key: Any) -> bytes:
     """
     Serialize cache key to bytes for external storage.
 
     Returns SHA256 hash suitable for Redis/database keys.
+
+    Note: Uses canonicalize + JSON serialization instead of pickle because
+    pickle is NOT deterministic across Python sessions due to hash randomization
+    affecting frozenset iteration order. This is critical for distributed caching
+    where different pods need to compute the same hash for identical inputs.
     """
+    import json
+
     try:
-        serialized = pickle.dumps(cache_key, protocol=4)
-        return hashlib.sha256(serialized).digest()
+        canonical = _canonicalize(cache_key)
+        json_str = json.dumps(canonical, sort_keys=True, separators=(',', ':'))
+        return hashlib.sha256(json_str.encode('utf-8')).digest()
     except Exception as e:
         logger.warning(f"Failed to serialize cache key: {e}")
-        return hashlib.sha256(str(id(cache_key)).encode()).digest()
+        # Fallback to pickle (non-deterministic but better than nothing)
+        try:
+            serialized = pickle.dumps(cache_key, protocol=4)
+            return hashlib.sha256(serialized).digest()
+        except Exception:
+            return hashlib.sha256(str(id(cache_key)).encode()).digest()
 
 
 def contains_nan(obj: Any) -> bool:
