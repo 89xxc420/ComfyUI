@@ -269,26 +269,3 @@ class UploadAssetSpec(BaseModel):
             if len(self.tags) < 2:
                 raise ValueError("models uploads require a category tag as the second tag")
         return self
-
-
-class SetPreviewBody(BaseModel):
-    """Set or clear the preview for an AssetInfo. Provide an Asset.id or null."""
-    preview_id: str | None = None
-
-    @field_validator("preview_id", mode="before")
-    @classmethod
-    def _norm_uuid(cls, v):
-        if v is None:
-            return None
-        s = str(v).strip()
-        if not s:
-            return None
-        try:
-            uuid.UUID(s)
-        except Exception:
-            raise ValueError("preview_id must be a UUID")
-        return s
-
-
-class ScheduleAssetScanBody(BaseModel):
-    roots: list[RootType] = Field(..., min_length=1)

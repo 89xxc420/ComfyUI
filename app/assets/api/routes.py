@@ -96,7 +96,6 @@ async def get_asset(request: web.Request) -> web.Response:
 
 @ROUTES.get(f"/api/assets/{{id:{UUID_RE}}}/content")
 async def download_asset_content(request: web.Request) -> web.Response:
-    return _error_response(501, "NOT_IMPLEMENTED", "Downloading asset content is not implemented yet.")
     # question: do we need disposition? could we just stick with one of these?
     disposition = request.query.get("disposition", "attachment").lower().strip()
     if disposition not in {"inline", "attachment"}:
@@ -125,7 +124,6 @@ async def download_asset_content(request: web.Request) -> web.Response:
 
 @ROUTES.post("/api/assets/from-hash")
 async def create_asset_from_hash(request: web.Request) -> web.Response:
-    return _error_response(501, "NOT_IMPLEMENTED", "Creating assets from hash is not implemented yet.")
     try:
         payload = await request.json()
         body = schemas_in.CreateFromHashBody.model_validate(payload)
@@ -149,8 +147,6 @@ async def create_asset_from_hash(request: web.Request) -> web.Response:
 @ROUTES.post("/api/assets")
 async def upload_asset(request: web.Request) -> web.Response:
     """Multipart/form-data endpoint for Asset uploads."""
-    return _error_response(501, "NOT_IMPLEMENTED", "Uploading assets is not implemented yet.")
-
     if not (request.content_type or "").lower().startswith("multipart/"):
         return _error_response(415, "UNSUPPORTED_MEDIA_TYPE", "Use multipart/form-data for uploads.")
 
@@ -359,37 +355,8 @@ async def update_asset(request: web.Request) -> web.Response:
     return web.json_response(result.model_dump(mode="json"), status=200)
 
 
-@ROUTES.put(f"/api/assets/{{id:{UUID_RE}}}/preview")
-async def set_asset_preview(request: web.Request) -> web.Response:
-    asset_info_id = str(uuid.UUID(request.match_info["id"]))
-    try:
-        body = schemas_in.SetPreviewBody.model_validate(await request.json())
-    except ValidationError as ve:
-        return _validation_error_response("INVALID_BODY", ve)
-    except Exception:
-        return _error_response(400, "INVALID_JSON", "Request body must be valid JSON.")
-
-    try:
-        result = manager.set_asset_preview(
-            asset_info_id=asset_info_id,
-            preview_asset_id=body.preview_id,
-            owner_id=USER_MANAGER.get_request_user_id(request),
-        )
-    except (PermissionError, ValueError) as ve:
-        return _error_response(404, "ASSET_NOT_FOUND", str(ve), {"id": asset_info_id})
-    except Exception:
-        logging.exception(
-            "set_asset_preview failed for asset_info_id=%s, owner_id=%s",
-            asset_info_id,
-            USER_MANAGER.get_request_user_id(request),
-        )
-        return _error_response(500, "INTERNAL", "Unexpected server error.")
-    return web.json_response(result.model_dump(mode="json"), status=200)
-
-
 @ROUTES.delete(f"/api/assets/{{id:{UUID_RE}}}")
 async def delete_asset(request: web.Request) -> web.Response:
-    return _error_response(501, "NOT_IMPLEMENTED", "Deleting assets is not implemented yet.")
     asset_info_id = str(uuid.UUID(request.match_info["id"]))
     delete_content = request.query.get("delete_content")
     delete_content = True if delete_content is None else delete_content.lower() not in {"0", "false", "no"}
@@ -497,24 +464,3 @@ async def delete_asset_tags(request: web.Request) -> web.Response:
         return _error_response(500, "INTERNAL", "Unexpected server error.")
 
     return web.json_response(result.model_dump(mode="json"), status=200)
-
-
-@ROUTES.post("/api/assets/scan/seed")
-async def seed_assets(request: web.Request) -> web.Response:
-    return _error_response(501, "NOT_IMPLEMENTED", "Seeding assets is not implemented yet.")
-    try:
-        payload = await request.json()
-    except Exception:
-        payload = {}
-
-    try:
-        body = schemas_in.ScheduleAssetScanBody.model_validate(payload)
-    except ValidationError as ve:
-        return _validation_error_response("INVALID_BODY", ve)
-
-    try:
-        scanner.seed_assets(body.roots)
-    except Exception:
-        logging.exception("seed_assets failed for roots=%s", body.roots)
-        return _error_response(500, "INTERNAL", "Unexpected server error.")
-    return web.json_response({"synced": True, "roots": body.roots}, status=200)
