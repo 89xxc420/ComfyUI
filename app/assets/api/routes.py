@@ -404,6 +404,7 @@ async def get_tags(request: web.Request) -> web.Response:
     )
     return web.json_response(result.model_dump(mode="json"))
 
+
 @ROUTES.post(f"/api/assets/{{id:{UUID_RE}}}/tags")
 async def add_asset_tags(request: web.Request) -> web.Response:
     asset_info_id = str(uuid.UUID(request.match_info["id"]))
