@@ -508,7 +508,7 @@ class SaveLatent:
                 for x in extra_pnginfo:
                     metadata[x] = json.dumps(extra_pnginfo[x])
 
-        file = folder_paths.format_output_filename(filename, counter, "latent")
+        file = f"{filename}_{counter:05}_.latent"
 
         results: list[FileLocator] = []
         results.append({
