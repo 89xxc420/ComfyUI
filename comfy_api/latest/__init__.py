@@ -22,6 +22,23 @@ class ComfyAPI_latest(ComfyAPIBase):
     VERSION = "latest"
     STABLE = False
 
+    class NodeReplacement(ProxiedSingleton):
+        async def register(self, node_replace: 'node_replace.NodeReplace') -> None:
+            """
+            Register a node replacement mapping.
+            
+            This async method supports process isolation via pyisolate, where
+            extensions run in separate processes. The call is RPC'd to the host
+            process where PromptServer and NodeReplaceManager live.
+            
+            Args:
+                node_replace: A NodeReplace object defining the old->new mapping
+            """
+            from server import PromptServer
+            PromptServer.instance.node_replace_manager.register(node_replace)
+
+    node_replacement: NodeReplacement
+
     class Execution(ProxiedSingleton):
         async def set_progress(
             self,

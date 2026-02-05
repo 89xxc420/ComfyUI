@@ -1,13 +1,25 @@
 from __future__ import annotations
 
+import warnings
 from typing import Any
-import app.node_replace_manager
+
 
 def register_node_replacement(node_replace: NodeReplace):
     """
     Register node replacement.
+    
+    .. deprecated::
+        Use ``ComfyAPI.node_replacement.register()`` instead.
+        This synchronous function does not work with process isolation (pyisolate).
     """
-    app.node_replace_manager.register_node_replacement(node_replace)
+    warnings.warn(
+        "register_node_replacement() is deprecated. "
+        "Use 'await ComfyAPI.node_replacement.register()' instead for pyisolate compatibility.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    from server import PromptServer
+    PromptServer.instance.node_replace_manager.register(node_replace)
 
 
 class NodeReplace:
