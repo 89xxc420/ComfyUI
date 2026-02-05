@@ -656,22 +656,27 @@ class BatchImagesMasksLatentsNode(io.ComfyNode):
         return io.NodeOutput(batched)
 
 
-from comfy_api.latest import ComfyAPI, node_replace
+from comfy_api.latest import node_replace
+from server import PromptServer
+
+def _register(nr: node_replace.NodeReplace):
+    """Helper to register replacements via PromptServer."""
+    PromptServer.instance.node_replace_manager.register(nr)
 
 async def register_replacements():
-    """Register all built-in node replacements using the async API."""
-    await register_replacements_longeredge()
-    await register_replacements_batchimages()
-    await register_replacements_upscaleimage()
-    await register_replacements_controlnet()
-    await register_replacements_load3d()
-    await register_replacements_preview3d()
-    await register_replacements_svdimg2vid()
-    await register_replacements_conditioningavg()
+    """Register all built-in node replacements."""
+    register_replacements_longeredge()
+    register_replacements_batchimages()
+    register_replacements_upscaleimage()
+    register_replacements_controlnet()
+    register_replacements_load3d()
+    register_replacements_preview3d()
+    register_replacements_svdimg2vid()
+    register_replacements_conditioningavg()
 
-async def register_replacements_longeredge():
+def register_replacements_longeredge():
     # No dynamic inputs here
-    await ComfyAPI.node_replacement.register(node_replace.NodeReplace(
+    _register(node_replace.NodeReplace(
             new_node_id="ImageScaleToMaxDimension",
             old_node_id="ResizeImagesByLongerEdge",
             old_widget_ids=["longer_edge"],
@@ -684,9 +689,9 @@ async def register_replacements_longeredge():
             output_mapping=[node_replace.OutputMap(new_idx=0, old_idx=0)],
         ))
 
-async def register_replacements_batchimages():
+def register_replacements_batchimages():
     # BatchImages node uses Autogrow
-    await ComfyAPI.node_replacement.register(node_replace.NodeReplace(
+    _register(node_replace.NodeReplace(
             new_node_id="BatchImagesNode",
             old_node_id="ImageBatch",
             input_mapping=[
@@ -695,9 +700,9 @@ async def register_replacements_batchimages():
             ],
         ))
 
-async def register_replacements_upscaleimage():
+def register_replacements_upscaleimage():
     # ResizeImageMaskNode uses DynamicCombo
-    await ComfyAPI.node_replacement.register(node_replace.NodeReplace(
+    _register(node_replace.NodeReplace(
             new_node_id="ResizeImageMaskNode",
             old_node_id="ImageScaleBy",
             old_widget_ids=["upscale_method", "scale_by"],
@@ -709,9 +714,9 @@ async def register_replacements_upscaleimage():
             ],
         ))
 
-async def register_replacements_controlnet():
+def register_replacements_controlnet():
     # T2IAdapterLoader → ControlNetLoader
-    await ComfyAPI.node_replacement.register(node_replace.NodeReplace(
+    _register(node_replace.NodeReplace(
             new_node_id="ControlNetLoader",
             old_node_id="T2IAdapterLoader",
             input_mapping=[
@@ -719,30 +724,30 @@ async def register_replacements_controlnet():
             ],
         ))
 
-async def register_replacements_load3d():
+def register_replacements_load3d():
     # Load3DAnimation merged into Load3D
-    await ComfyAPI.node_replacement.register(node_replace.NodeReplace(
+    _register(node_replace.NodeReplace(
             new_node_id="Load3D",
             old_node_id="Load3DAnimation",
         ))
 
-async def register_replacements_preview3d():
+def register_replacements_preview3d():
     # Preview3DAnimation merged into Preview3D
-    await ComfyAPI.node_replacement.register(node_replace.NodeReplace(
+    _register(node_replace.NodeReplace(
             new_node_id="Preview3D",
             old_node_id="Preview3DAnimation",
         ))
 
-async def register_replacements_svdimg2vid():
+def register_replacements_svdimg2vid():
     # Typo fix: SDV → SVD
-    await ComfyAPI.node_replacement.register(node_replace.NodeReplace(
+    _register(node_replace.NodeReplace(
             new_node_id="SVD_img2vid_Conditioning",
             old_node_id="SDV_img2vid_Conditioning",
         ))
 
-async def register_replacements_conditioningavg():
+def register_replacements_conditioningavg():
     # Typo fix: trailing space in node name
-    await ComfyAPI.node_replacement.register(node_replace.NodeReplace(
+    _register(node_replace.NodeReplace(
             new_node_id="ConditioningAverage",
             old_node_id="ConditioningAverage ",
         ))
