@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 from nodes import NODE_CLASS_MAPPINGS
 
 class NodeStruct(TypedDict):
-    inputs: dict[str, str | int | float | tuple[str, int]]
+    inputs: dict[str, str | int | float | bool | tuple[str, int]]
     class_type: str
     _meta: dict[str, str]
 
