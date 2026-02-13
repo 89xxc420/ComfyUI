@@ -83,7 +83,6 @@ class NodeReplaceManager:
                 # third, replace outputs
                 if replacement.output_mapping is not None:
                     # re-mapping outputs requires changing the input values of nodes that receive connections from this one
-                    # so we need to find all nodes that receive connections from this one
                     if node_number in connections:
                         for conns in connections[node_number]:
                             conn_node_number, conn_input_id, old_output_idx = conns
