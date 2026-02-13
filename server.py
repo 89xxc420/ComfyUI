@@ -889,6 +889,8 @@ class PromptServer():
                 if "partial_execution_targets" in json_data:
                     partial_execution_targets = json_data["partial_execution_targets"]
 
+                self.node_replace_manager.apply_replacements(prompt)
+
                 valid = await execution.validate_prompt(prompt_id, prompt, partial_execution_targets)
                 extra_data = {}
                 if "extra_data" in json_data:
