@@ -27,6 +27,14 @@ from comfy_api_nodes.util import (
 )
 
 
+def _is_tencent_rate_limited(status: int, body: object) -> bool:
+    return (
+        status == 400
+        and isinstance(body, dict)
+        and "RequestLimitExceeded" in str(body.get("Response", {}).get("Error", {}).get("Code", ""))
+    )
+
+
 def get_file_from_response(
     response_objs: list[ResultFile3D], file_type: str, raise_if_not_found: bool = True
 ) -> ResultFile3D | None:
@@ -129,6 +137,7 @@ class TencentTextToModelNode(IO.ComfyNode):
                 EnablePBR=generate_type.get("pbr", None),
                 PolygonType=generate_type.get("polygon_type", None),
             ),
+            is_rate_limited=_is_tencent_rate_limited,
         )
         if response.Error:
             raise ValueError(f"Task creation failed with code {response.Error.Code}: {response.Error.Message}")
@@ -280,6 +289,7 @@ class TencentImageToModelNode(IO.ComfyNode):
                 EnablePBR=generate_type.get("pbr", None),
                 PolygonType=generate_type.get("polygon_type", None),
             ),
+            is_rate_limited=_is_tencent_rate_limited,
         )
         if response.Error:
             raise ValueError(f"Task creation failed with code {response.Error.Code}: {response.Error.Message}")
@@ -368,11 +378,7 @@ class TencentModelTo3DUVNode(IO.ComfyNode):
                     Url=await upload_3d_model_to_comfyapi(cls, model_3d, file_format),
                 )
             ),
-            is_rate_limited=lambda status, body: (
-                status == 400
-                and isinstance(body, dict)
-                and "RequestLimitExceeded" in str(body.get("Response", {}).get("Error", {}).get("Code", ""))
-            ),
+            is_rate_limited=_is_tencent_rate_limited,
         )
         if response.Error:
             raise ValueError(f"Task creation failed with code {response.Error.Code}: {response.Error.Message}")
@@ -459,6 +465,7 @@ class Tencent3DTextureEditNode(IO.ComfyNode):
                 Prompt=prompt,
                 EnablePBR=True,
             ),
+            is_rate_limited=_is_tencent_rate_limited,
         )
         if response.Error:
             raise ValueError(f"Task creation failed with code {response.Error.Code}: {response.Error.Message}")
@@ -532,6 +539,7 @@ class Tencent3DPartNode(IO.ComfyNode):
             data=To3DUVTaskRequest(
                 File=To3DUVFileInput(Type=file_format.upper(), Url=model_url),
             ),
+            is_rate_limited=_is_tencent_rate_limited,
         )
         if response.Error:
             raise ValueError(f"Task creation failed with code {response.Error.Code}: {response.Error.Message}")
